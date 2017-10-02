@@ -33,4 +33,9 @@ model_path = 'models/tensorflow_inception_graph.pb'
 load_model(model_path)
 
 sess = tf.Session()
-print(sess.graph.get_operations())
+
+def print_layer_names():
+    for op in sess.graph.get_operations():
+        print(op.name)
+
+print_layer_names()
