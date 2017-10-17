@@ -107,7 +107,7 @@ def compute_gradient_from_image_segments(image, tensor, segment_dim=200):
     return gradient
 
 
-def deepdream(image, layer_name, iterations=200, step_size=2):
+def deepdream(image, layer_name, iterations=300, step_size=2):
     tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
     compute_gradient_from_image_segments(image, tensor)
     dreamed_image = image.copy()
@@ -115,9 +115,51 @@ def deepdream(image, layer_name, iterations=200, step_size=2):
         print("iteration: ", i)
         gradient = compute_gradient_from_image_segments(dreamed_image, tensor)
         dreamed_image += gradient * step_size
-        if i % 20 == 0:
-            show_arrayimg(dreamed_image)
-    show_arrayimg(dreamed_image)
+        #if i % 20 == 0:
+        #    show_arrayimg(dreamed_image)
+    #show_arrayimg(dreamed_image)
+    return dreamed_image
 
-deepdream(img, 'mixed5b_3x3')
+
+# The following function runs the deepdream-algorithm on different scales (octaves) of the original image.
+# This is done to discover patterns of different sizes.
+def deepdream_with_octaves(image, layer_name, iterations=100, step_size=2, octaves=4, scale_ratio=0.8):
+    image_height = len(image)
+    image_with = len(image[0])
+
+    # converts the image-array back to an image object for easy manipulation
+    image = PIL.Image.fromarray(image.astype('uint8'), 'RGB')
+
+    # iterates through different octaves, starting with the smallest
+    for i in range(octaves-1, -1, -1):
+
+        # scale image
+        new_height = int(image_height * scale_ratio**i)
+        new_with = int(image_with * scale_ratio**i)
+        scaled_image = image.resize((new_with, new_height))
+
+        # convert image to array
+        scaled_image_array = np.float32(scaled_image)
+
+        # run deepdream algorithm
+        dreamed_image_array = deepdream(scaled_image_array, layer_name, iterations)
+
+        # create image object of the image-array
+        dreamed_image_array = np.clip(dreamed_image_array / 255.0, 0, 1) * 255
+        dreamed_image = PIL.Image.fromarray(dreamed_image_array.astype('uint8'))
+        dreamed_image.show()
+
+        # resize back to the original size
+        dreamed_image = dreamed_image.resize((image_with, image_height))
+
+        # blend the previous high resolution image with the dreamed image
+        image = PIL.Image.blend(image, dreamed_image, 0.8)
+
+    return np.float32(image)
+
+
+
+deepdream_with_octaves(img, 'mixed4c', iterations=100, octaves=6)
+
+# deepdream(img, 'mixed3b')
 
