@@ -2,7 +2,7 @@ import os
 import tensorflow as tf
 import numpy as np
 import random
-import PIL.Image
+import PIL.Image, PIL.ImageTk
 from tkinter import *
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
@@ -11,7 +11,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = True
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/cat2.jpg'
+img_path = '/home/odin/Desktop/div/odin.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -21,7 +21,14 @@ img = np.float32(PIL.Image.open(img_path))
 def show_arrayimg(array):
     array = np.clip(array / 255.0, 0, 1) * 255
     dreamed_image = PIL.Image.fromarray(array.astype('uint8'))
-    dreamed_image.show()
+    if use_GUI:
+        global image
+        image = PIL.ImageTk.PhotoImage(dreamed_image)
+        canvas.itemconfig(imageSprite, image=image)
+        canvas.update()
+    else:
+        dreamed_image.show()
+
 
 # show_arrayimg(img)
 
@@ -143,7 +150,7 @@ def deepdream(image, layer_name, iterations=100, step_size=3, channel=None):
         dreamed_image += gradient * step_size
 
         # show the image during the run
-        if i % 10 == 0:
+        if i % 2 == 0:
             show_arrayimg(dreamed_image)
 
     show_arrayimg(dreamed_image)
@@ -197,6 +204,16 @@ if use_GUI:
     root = Tk()
     root.title("deeper dream")
 
+    menuFrame = Frame(root)
+    menuFrame.pack(side=TOP)
+
+    imageFrame = Frame(root, height=500, width=700)
+    imageFrame.pack(side=BOTTOM)
+
+    canvas = Canvas(imageFrame, width=len(img), height=len(img[0]))
+    canvas.pack(side=LEFT, fill=BOTH)
+    original_img = PIL.ImageTk.PhotoImage(PIL.Image.open(img_path))
+    imageSprite = canvas.create_image(0, 0, image=original_img, anchor=NW)
 
     def onselect_layer(event):
         channelMenu.delete(0, END)
@@ -210,8 +227,8 @@ if use_GUI:
             channelMenu.insert(END, ch)
         channelMenu.select_set(0)
 
-    scrollbar = Scrollbar(root)
-    layerMenu = Listbox(root, yscrollcommand=scrollbar.set, width=30)
+    scrollbar = Scrollbar(menuFrame)
+    layerMenu = Listbox(menuFrame, yscrollcommand=scrollbar.set, width=30)
     layerMenu.pack(side=LEFT)
     for op in sess.graph.get_operations():
         layerMenu.insert(END, op.name)
@@ -219,8 +236,8 @@ if use_GUI:
     scrollbar.pack(side=LEFT, fill=Y)
     scrollbar.config(command=layerMenu.yview)
 
-    scrollbar2 = Scrollbar(root)
-    channelMenu = Listbox(root, yscrollcommand=scrollbar2.set)
+    scrollbar2 = Scrollbar(menuFrame)
+    channelMenu = Listbox(menuFrame, yscrollcommand=scrollbar2.set)
     channelMenu.pack(side=LEFT)
     scrollbar2.pack(side=LEFT, fill=Y)
     scrollbar2.config(command=channelMenu.yview)
@@ -237,7 +254,7 @@ if use_GUI:
             print(channel_name)
             deepdream(img, layer_name, iterations=iterations, channel=int(channel_name))
 
-    rightFrame = Frame(root)
+    rightFrame = Frame(menuFrame)
     rightFrame.pack(side=RIGHT)
 
     iterationsFrame = Frame(rightFrame)
