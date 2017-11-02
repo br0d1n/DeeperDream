@@ -11,7 +11,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = True
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/odin.jpg'
+img_path = '/home/odin/Desktop/div/cat1.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -210,7 +210,7 @@ if use_GUI:
     imageFrame = Frame(root, height=500, width=700)
     imageFrame.pack(side=BOTTOM)
 
-    canvas = Canvas(imageFrame, width=len(img), height=len(img[0]))
+    canvas = Canvas(imageFrame, width=len(img[0]), height=len(img))
     canvas.pack(side=LEFT, fill=BOTH)
     original_img = PIL.ImageTk.PhotoImage(PIL.Image.open(img_path))
     imageSprite = canvas.create_image(0, 0, image=original_img, anchor=NW)
