@@ -3,10 +3,15 @@ import tensorflow as tf
 import numpy as np
 import random
 import PIL.Image
+from tkinter import *
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
+
+# toggle the gui on/off
+use_GUI = True
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/random.jpg'
+img_path = '/home/odin/Desktop/div/cat2.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -28,13 +33,20 @@ def load_model(model_path):
         graph_def.ParseFromString(f.read())
         tf.import_graph_def(graph_def, name='')
 
+def load_model_2(model_path):
+    with tf.Session() as sess:
+        tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.TRAINING], model_path)
+
+
 # change this to the correct path
 model_path = 'models/tensorflow_inception_graph.pb'
+# model_path = 'saved_models/'
 
-load_model(model_path)
 
 # start a tensorflow session
 sess = tf.Session()
+
+load_model(model_path)
 
 
 def print_layer_names():
@@ -77,15 +89,15 @@ def compute_gradient_from_image_segments(image, tensor, channel=None, segment_di
     while x_start < x_max:
 
         # find the beginning and end of the current segment. Can't be outside the image
-        x_start = max(0, x_start)
         x_end = min(x_start + segment_dim, x_max)
+        x_start = max(0, x_start)
 
         # randomness in the y-direction
         y_start = random.randint(-random_offset, 0)
         while y_start < y_max:
 
-            y_start = max(0, y_start)
             y_end = min(y_start + segment_dim, y_max)
+            y_start = max(0, y_start)
 
             # get the current image-segment, witch we will compute the gradient for
             image_segment = image[x_start:x_end, y_start:y_end, :]
@@ -111,7 +123,7 @@ def compute_gradient_from_image_segments(image, tensor, channel=None, segment_di
 
 
 # the deepdream algorithm, which alters the input-image according to the gradient computed in every iteration
-def deepdream(image, layer_name, iterations=30, step_size=3, channel=None):
+def deepdream(image, layer_name, iterations=100, step_size=3, channel=None):
 
     # get the tensor we will use to compute the gradient
     tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
@@ -175,5 +187,71 @@ def deepdream_with_octaves(image, layer_name, iterations=100, step_size=3, chann
 
     return np.float32(image)
 
+# deepdream(img, 'mixed4d_3x3_bottleneck_pre_relu', iterations=300, channel=139)
 
-deepdream(img, 'mixed4c', iterations=300)
+
+# ----------------------- TKINTER ------------------------------------------
+
+if use_GUI:
+
+    root = Tk()
+    root.title("deeper dream")
+
+
+    def onselect_layer(event):
+        channelMenu.delete(0, END)
+        selected = layerMenu.curselection()
+        layer_name = layerMenu.get(selected[0])
+        tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
+        num_channels = tensor.get_shape().as_list()[-1]
+        channels = range(0, num_channels)
+        channelMenu.insert(END, "all channels")
+        for ch in channels:
+            channelMenu.insert(END, ch)
+        channelMenu.select_set(0)
+
+    scrollbar = Scrollbar(root)
+    layerMenu = Listbox(root, yscrollcommand=scrollbar.set, width=30)
+    layerMenu.pack(side=LEFT)
+    for op in sess.graph.get_operations():
+        layerMenu.insert(END, op.name)
+    layerMenu.bind("<ButtonRelease-1>", onselect_layer)
+    scrollbar.pack(side=LEFT, fill=Y)
+    scrollbar.config(command=layerMenu.yview)
+
+    scrollbar2 = Scrollbar(root)
+    channelMenu = Listbox(root, yscrollcommand=scrollbar2.set)
+    channelMenu.pack(side=LEFT)
+    scrollbar2.pack(side=LEFT, fill=Y)
+    scrollbar2.config(command=channelMenu.yview)
+
+
+    def run(event):
+        layer_name = layerMenu.get(ACTIVE)
+        channel_name = channelMenu.get(ACTIVE)
+        iterations = int(iterationsEntry.get())
+        if channel_name == "all channels":
+            deepdream(img, layer_name, iterations=iterations)
+        else:
+            print(layer_name)
+            print(channel_name)
+            deepdream(img, layer_name, iterations=iterations, channel=int(channel_name))
+
+    rightFrame = Frame(root)
+    rightFrame.pack(side=RIGHT)
+
+    iterationsFrame = Frame(rightFrame)
+    iterationsFrame.pack(side=TOP)
+
+    iterationsLabel = Label(iterationsFrame, text="iterations")
+    iterationsLabel.pack(side=LEFT)
+
+    iterationsEntry = Entry(iterationsFrame)
+    iterationsEntry.pack(side=RIGHT)
+    iterationsEntry.insert(END, "100")
+
+    runButton = Button(rightFrame, text="Run DeepDream")
+    runButton.bind("<Button-1>", run)
+    runButton.pack(side=BOTTOM)
+
+    root.mainloop()
