@@ -72,9 +72,11 @@ sess = tf.Session()
 load_model(model_path)
 
 
+# print the names of all layers in the network
 def print_layer_names():
     for op in sess.graph.get_operations():
-        print(op.name)
+        if op.type != 'Const':
+            print(op.type, "\t\t", op.name)
 
 print_layer_names()
 
@@ -247,7 +249,8 @@ if use_GUI:
     layerMenu = Listbox(menuFrame, yscrollcommand=scrollbar.set, width=30)
     layerMenu.pack(side=LEFT)
     for op in sess.graph.get_operations():
-        layerMenu.insert(END, op.name)
+        if op.type != 'Const' and op.type != 'Placeholder':
+            layerMenu.insert(END, op.name)
     layerMenu.bind("<ButtonRelease-1>", onselect_layer)
     scrollbar.pack(side=LEFT, fill=Y)
     scrollbar.config(command=layerMenu.yview)
