@@ -17,6 +17,25 @@ img_path = '/home/odin/Desktop/div/cat1.jpg'
 img = np.float32(PIL.Image.open(img_path))
 
 
+# generate an image with random noise
+def random_noise_img(dim):
+    array = np.zeros((dim, dim, 3))
+    for x in range(dim):
+        for y in range(dim):
+            array[x][y][0] = float(random.randint(0, 255))
+            array[x][y][1] = float(random.randint(0, 255))
+            array[x][y][2] = float(random.randint(0, 255))
+    return array
+
+
+# generate a completely grey image
+def grey_img(dim):
+    array = np.full((dim, dim, 3), 120)
+    return array
+
+img = random_noise_img(500)
+
+
 # create and show image from float array
 def show_arrayimg(array):
     array = np.clip(array / 255.0, 0, 1) * 255
@@ -28,9 +47,6 @@ def show_arrayimg(array):
         canvas.update()
     else:
         dreamed_image.show()
-
-
-# show_arrayimg(img)
 
 
 # load the model
@@ -212,7 +228,7 @@ if use_GUI:
 
     canvas = Canvas(imageFrame, width=len(img[0]), height=len(img))
     canvas.pack(side=LEFT, fill=BOTH)
-    original_img = PIL.ImageTk.PhotoImage(PIL.Image.open(img_path))
+    original_img = PIL.ImageTk.PhotoImage(PIL.Image.fromarray(img.astype('uint8')))
     imageSprite = canvas.create_image(0, 0, image=original_img, anchor=NW)
 
     def onselect_layer(event):
@@ -253,6 +269,7 @@ if use_GUI:
             print(layer_name)
             print(channel_name)
             deepdream(img, layer_name, iterations=iterations, channel=int(channel_name))
+
 
     rightFrame = Frame(menuFrame)
     rightFrame.pack(side=RIGHT)
