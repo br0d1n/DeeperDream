@@ -5,9 +5,9 @@ verify_ssl = true
 python_version = "3.5"
 [packages]
 
-tensorflow-gpu = "*"
-Pillow = "*"
+pillow = "*"
 scipy = "*"
 scikit-image = "*"
+tensorflow-gpu = "*"
 
 

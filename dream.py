@@ -33,7 +33,7 @@ def grey_img(dim):
     array = np.full((dim, dim, 3), 120)
     return array
 
-img = random_noise_img(500)
+# img = random_noise_img(500)
 
 
 # create and show image from float array
@@ -56,6 +56,8 @@ def load_model(model_path):
         graph_def.ParseFromString(f.read())
         tf.import_graph_def(graph_def, name='')
 
+
+# TODO: Load our own models into the graph
 def load_model_2(model_path):
     with tf.Session() as sess:
         tf.saved_model.loader.load(sess, [tf.saved_model.tag_constants.TRAINING], model_path)
@@ -75,8 +77,8 @@ load_model(model_path)
 # print the names of all layers in the network
 def print_layer_names():
     for op in sess.graph.get_operations():
-        if op.type != 'Const':
-            print(op.type, "\t\t", op.name)
+        if op.name == 'avgpool0':
+            print(op)
 
 print_layer_names()
 
@@ -84,7 +86,7 @@ print_layer_names()
 # The following function splits the image into smaller segments (grid style), computes gradients for
 # each segment, and concatenates the results into a gradient for the entire image. This gets rid of
 # GPU-limitations, so we are free to use as large pictures as we want to.
-def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=200):
+def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=299):
 
     # Squaring the tensor gives the feature detection in images higher discrimination?? (pictures look better)
     tensor = tf.square(tensor)
@@ -94,6 +96,8 @@ def compute_gradient_from_image_segments(image, tensor, channel=None, segment_di
         tensor_mean = tf.reduce_mean(tensor[:,:,:,:])
     else:
         tensor_mean = tf.reduce_mean(tensor[:,:,:,channel])
+    # TODO: Find a way to use the final output tensor(output2:0) for the backprop
+    # tensor_mean = tf.reduce_mean(tensor[:, channel])
 
     # get the input tensor
     input_tensor = sess.graph.get_tensor_by_name("input:0")
@@ -170,6 +174,10 @@ def deepdream(image, layer_name, iterations=100, step_size=3, channel=None):
         # show the image during the run
         if i % 2 == 0:
             show_arrayimg(dreamed_image)
+            if use_GUI:
+                infoLabel.config(text="layer: "+layer_name+"\tchannel: "+str(channel)+"\titeration: "+str(i))
+                if runButton.config('text')[-1] == 'Run DeepDream':
+                    break
 
     show_arrayimg(dreamed_image)
     return dreamed_image
@@ -226,12 +234,17 @@ if use_GUI:
     menuFrame.pack(side=TOP)
 
     imageFrame = Frame(root, height=500, width=700)
-    imageFrame.pack(side=BOTTOM)
-
+    imageFrame.pack(side=TOP)
     canvas = Canvas(imageFrame, width=len(img[0]), height=len(img))
     canvas.pack(side=LEFT, fill=BOTH)
     original_img = PIL.ImageTk.PhotoImage(PIL.Image.fromarray(img.astype('uint8')))
     imageSprite = canvas.create_image(0, 0, image=original_img, anchor=NW)
+
+    infoFrame = Frame(root, height=30, width=700)
+    infoFrame.pack(side=BOTTOM)
+    infoLabel = Label(infoFrame, font=(None, 14))
+    infoLabel.pack()
+
 
     def onselect_layer(event):
         channelMenu.delete(0, END)
@@ -245,6 +258,7 @@ if use_GUI:
             channelMenu.insert(END, ch)
         channelMenu.select_set(0)
 
+    # menu for choosing layer
     scrollbar = Scrollbar(menuFrame)
     layerMenu = Listbox(menuFrame, yscrollcommand=scrollbar.set, width=30)
     layerMenu.pack(side=LEFT)
@@ -255,6 +269,7 @@ if use_GUI:
     scrollbar.pack(side=LEFT, fill=Y)
     scrollbar.config(command=layerMenu.yview)
 
+    # menu for choosing channel
     scrollbar2 = Scrollbar(menuFrame)
     channelMenu = Listbox(menuFrame, yscrollcommand=scrollbar2.set)
     channelMenu.pack(side=LEFT)
@@ -263,31 +278,46 @@ if use_GUI:
 
 
     def run(event):
-        layer_name = layerMenu.get(ACTIVE)
-        channel_name = channelMenu.get(ACTIVE)
-        iterations = int(iterationsEntry.get())
-        if channel_name == "all channels":
-            deepdream(img, layer_name, iterations=iterations)
+        if runButton.config('text')[-1] == 'Run DeepDream':
+            layer_name = layerMenu.get(ACTIVE)
+            channel_name = channelMenu.get(ACTIVE)
+            iterations = int(iterationsEntry.get())
+            step_size = int(stepsizeEntry.get())
+            if channel_name != '':
+                runButton.config(text="Stop DeepDream", relief="raised")
+                if channel_name == "all channels":
+                    deepdream(img, layer_name, iterations=iterations, step_size=step_size)
+                else:
+                    deepdream(img, layer_name, iterations=iterations, step_size=step_size, channel=int(channel_name))
+            else:
+                infoLabel.config(text='Choose layer and channel first!')
         else:
-            print(layer_name)
-            print(channel_name)
-            deepdream(img, layer_name, iterations=iterations, channel=int(channel_name))
+            runButton.config(text="Run DeepDream", relief="raised")
 
 
-    rightFrame = Frame(menuFrame)
-    rightFrame.pack(side=RIGHT)
 
-    iterationsFrame = Frame(rightFrame)
+
+    # all the parameters goes in here
+    parameterFrame = Frame(menuFrame)
+    parameterFrame.pack(side=RIGHT)
+
+    stepsizeFrame = Frame(parameterFrame)
+    stepsizeFrame.pack(side=TOP)
+    stepsizeLabel = Label(stepsizeFrame, text="step size")
+    stepsizeLabel.pack(side=LEFT)
+    stepsizeEntry = Entry(stepsizeFrame)
+    stepsizeEntry.pack(side=RIGHT)
+    stepsizeEntry.insert(END, "3")
+
+    iterationsFrame = Frame(parameterFrame)
     iterationsFrame.pack(side=TOP)
-
     iterationsLabel = Label(iterationsFrame, text="iterations")
     iterationsLabel.pack(side=LEFT)
-
     iterationsEntry = Entry(iterationsFrame)
     iterationsEntry.pack(side=RIGHT)
     iterationsEntry.insert(END, "100")
 
-    runButton = Button(rightFrame, text="Run DeepDream")
+    runButton = Button(parameterFrame, text="Run DeepDream", relief="raised")
     runButton.bind("<Button-1>", run)
     runButton.pack(side=BOTTOM)
 
