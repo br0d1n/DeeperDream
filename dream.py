@@ -13,11 +13,10 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = False
 
 # change this to the correct path
-img_path = '/home/ole/Pictures/5city.jpg'
+img_path = '/home/ole/Pictures/car.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
-
 
 # generate an image with random noise
 def random_noise_img(dim):
@@ -35,7 +34,7 @@ def grey_img(dim):
     array = np.full((dim, dim, 3), 120)
     return array
 
-img = random_noise_img(500)
+#img = random_noise_img(500)
 
 
 # create and show image from float array
@@ -81,22 +80,6 @@ def print_layer_names():
             print(op.type, "\t\t", op.name)
 
 print_layer_names()
-
-def plotNNFilter(layer_name):
-    tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
-    units = sess.run(tensor,feed_dict={"input:0":np.reshape(img,[1,500,500,3])})
-    filters = units.shape[3]
-    plt.figure(1, figsize=(20,20))
-    n_columns = 10
-    n_rows = 10
-    for i in range(100):
-        print("Plotting filter nr. ", i)
-        plt.subplot(n_rows, n_columns, i+1)
-        plt.title('Filter ' + str(i))
-        plt.imshow(units[0,:,:,i], interpolation="none", cmap="gray")
-    plt.show()
-
-plotNNFilter("mixed5b")
 
 # The following function splits the image into smaller segments (grid style), computes gradients for
 # each segment, and concatenates the results into a gradient for the entire image. This gets rid of
@@ -309,3 +292,22 @@ if use_GUI:
     runButton.pack(side=BOTTOM)
 
     root.mainloop()
+
+def plotNNFilter(layer_name):
+    #Get the tensor by name
+    tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
+    #Run the tensor with the image as input
+    units = sess.run(tensor,feed_dict={"input:0":[img]})
+    filters = units.shape[3]
+    plt.figure(1, figsize=(20,20))
+    n_columns = 8
+    n_rows = 8
+    #Plot the first 100 filter-activations
+    for i in range(n_columns*n_rows):
+        print("Plotting filter nr. ", i)
+        plt.subplot(n_rows, n_columns, i+1)
+        plt.title("Mean:" + str(np.mean(units[0,:,:,i])))
+        plt.imshow(units[0,:,:,i], interpolation="none", cmap="gray")
+    plt.show()
+
+plotNNFilter("mixed4b")
