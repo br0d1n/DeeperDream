@@ -11,7 +11,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = True
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/cat1.jpg'
+img_path = '/home/odin/Desktop/div/clouds.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -185,7 +185,7 @@ def deepdream(image, layer_name, iterations=100, step_size=3, channel=None):
 
 # The following function runs the deepdream-algorithm on different scales (octaves) of the original image.
 # This is done to discover patterns of different sizes.
-def deepdream_with_octaves(image, layer_name, iterations=100, step_size=3, channel=None, octaves=4, scale_ratio=0.8, octave_blend=0.7):
+def deepdream_with_octaves(image, layer_name, iterations=100, step_size=3, channel=None, octaves=1, scale_ratio=0.8, octave_blend=0.5):
     image_height = len(image)
     image_with = len(image[0])
 
@@ -209,18 +209,14 @@ def deepdream_with_octaves(image, layer_name, iterations=100, step_size=3, chann
         # create image object of the image-array
         dreamed_image_array = np.clip(dreamed_image_array / 255.0, 0, 1) * 255
         dreamed_image = PIL.Image.fromarray(dreamed_image_array.astype('uint8'))
-        dreamed_image.show()
 
         # resize back to the original size
         dreamed_image = dreamed_image.resize((image_with, image_height), PIL.Image.BICUBIC)
 
         # blend the previous high resolution image with the dreamed image
         image = PIL.Image.blend(image, dreamed_image, octave_blend)
-        image.show()
 
     return np.float32(image)
-
-# deepdream(img, 'mixed4d_3x3_bottleneck_pre_relu', iterations=300, channel=139)
 
 
 # ----------------------- TKINTER ------------------------------------------
@@ -283,27 +279,40 @@ if use_GUI:
             channel_name = channelMenu.get(ACTIVE)
             iterations = int(iterationsEntry.get())
             step_size = int(stepsizeEntry.get())
+            octaves = int(octavesEntry.get())
+            scale_ratio = float(scaleEntry.get())
             if channel_name != '':
                 runButton.config(text="Stop DeepDream", relief="raised")
                 if channel_name == "all channels":
-                    deepdream(img, layer_name, iterations=iterations, step_size=step_size)
+                    deepdream_with_octaves(img, layer_name, iterations=iterations, step_size=step_size, octaves=octaves, scale_ratio=scale_ratio)
                 else:
-                    deepdream(img, layer_name, iterations=iterations, step_size=step_size, channel=int(channel_name))
+                    deepdream_with_octaves(img, layer_name, iterations=iterations, step_size=step_size, channel=int(channel_name), octaves=octaves, scale_ratio=scale_ratio)
             else:
                 infoLabel.config(text='Choose layer and channel first!')
         else:
             runButton.config(text="Run DeepDream", relief="raised")
 
-
-
-
     # all the parameters goes in here
     parameterFrame = Frame(menuFrame)
     parameterFrame.pack(side=RIGHT)
 
+    octavesFrame = Frame(parameterFrame)
+    octavesFrame.pack(side=TOP)
+    octavesLabel = Label(octavesFrame, text="octaves")
+    octavesLabel.pack(side=LEFT)
+    octavesEntry = Entry(octavesFrame, width=7)
+    octavesEntry.pack(side=LEFT)
+    octavesEntry.insert(END, "1")
+
+    scaleLabel = Label(octavesFrame, text="scale")
+    scaleLabel.pack(side=LEFT)
+    scaleEntry = Entry(octavesFrame, width=7)
+    scaleEntry.pack(side=LEFT)
+    scaleEntry.insert(END, "0.8")
+
     stepsizeFrame = Frame(parameterFrame)
     stepsizeFrame.pack(side=TOP)
-    stepsizeLabel = Label(stepsizeFrame, text="step size")
+    stepsizeLabel = Label(stepsizeFrame, text="step size", width=7)
     stepsizeLabel.pack(side=LEFT)
     stepsizeEntry = Entry(stepsizeFrame)
     stepsizeEntry.pack(side=RIGHT)
