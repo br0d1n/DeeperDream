@@ -4,14 +4,16 @@ import numpy as np
 import random
 import PIL.Image, PIL.ImageTk
 from tkinter import *
+import matplotlib.pyplot as plt
+import math
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 
 # toggle the gui on/off
-use_GUI = True
+use_GUI = False
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/cat1.jpg'
+img_path = '/home/ole/Pictures/5city.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -80,6 +82,21 @@ def print_layer_names():
 
 print_layer_names()
 
+def plotNNFilter(layer_name):
+    tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
+    units = sess.run(tensor,feed_dict={"input:0":np.reshape(img,[1,500,500,3])})
+    filters = units.shape[3]
+    plt.figure(1, figsize=(20,20))
+    n_columns = 10
+    n_rows = 10
+    for i in range(100):
+        print("Plotting filter nr. ", i)
+        plt.subplot(n_rows, n_columns, i+1)
+        plt.title('Filter ' + str(i))
+        plt.imshow(units[0,:,:,i], interpolation="none", cmap="gray")
+    plt.show()
+
+plotNNFilter("mixed5b")
 
 # The following function splits the image into smaller segments (grid style), computes gradients for
 # each segment, and concatenates the results into a gradient for the entire image. This gets rid of
