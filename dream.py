@@ -13,7 +13,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = False
 
 # change this to the correct path
-img_path = '/home/ole/Pictures/car.jpg'
+img_path = '/home/ole/Pictures/5dogs.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -298,16 +298,51 @@ def plotNNFilter(layer_name):
     tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
     #Run the tensor with the image as input
     units = sess.run(tensor,feed_dict={"input:0":[img]})
-    filters = units.shape[3]
+    filters = units[0,:,:,:]
+    filter_size = units.shape[3]
+    width = units.shape[1]
+    height = units.shape[2]
     plt.figure(1, figsize=(20,20))
-    n_columns = 8
-    n_rows = 8
-    #Plot the first 100 filter-activations
-    for i in range(n_columns*n_rows):
-        print("Plotting filter nr. ", i)
-        plt.subplot(n_rows, n_columns, i+1)
-        plt.title("Mean:" + str(np.mean(units[0,:,:,i])))
-        plt.imshow(units[0,:,:,i], interpolation="none", cmap="gray")
-    plt.show()
+    n_columns = 13
+    n_rows = 10
 
-plotNNFilter("mixed4b")
+    sorted_filters = list()
+    for i in range(filter_size):
+        fi = filters[:,:,i]
+        sorted_filters.append((np.mean(fi),i,fi))
+    sorted_filters = sorted(sorted_filters, reverse=True, key=lambda tup: tup[0])
+
+    for i in range(25):
+
+        filter_tuple = sorted_filters[i]
+
+        newImg = PIL.Image.open(img_path)
+        mask = PIL.Image.fromarray(filter_tuple[2]/filter_tuple[2].max())
+        mask = np.float32(mask.resize((img.shape[1], img.shape[0])))
+        r,g,b = newImg.split()
+
+        r = PIL.Image.fromarray(np.uint8(r*mask))
+        g = PIL.Image.fromarray(np.uint8(g*mask))
+        b = PIL.Image.fromarray(np.uint8(b*mask))
+
+        print("Showing filter:", filter_tuple[1], "Score:", filter_tuple[0])
+
+        newImg = PIL.Image.merge('RGB', (r,g,b))
+        newImg.show()
+
+    #Plot the first 100 filter-activations
+    # means = np.zeros(filters)
+    # for i in range(filters):
+    #     means[i] = np.mean(units[0,:,:,i])
+    # k = 0
+    # for i in range(filters):
+    #     if(means[i] > 3 and k < n_columns*n_rows):
+    #         print("Plotting filter nr. ", i)
+    #         plt.subplot(n_rows, n_columns, k+1)
+    #         plt.title("Mean:" + str(np.mean(units[0,:,:,i])))
+    #         plt.imshow(units[0,:,:,i], interpolation="none", cmap="gray")
+    #         k += 1
+    #plt.tight_layout(h_pad=5.0)
+    #plt.show()
+
+plotNNFilter("mixed4e")
