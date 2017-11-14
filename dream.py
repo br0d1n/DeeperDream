@@ -4,14 +4,14 @@ import numpy as np
 import random
 import PIL.Image, PIL.ImageTk
 from tkinter import *
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 
 # toggle the gui on/off
 use_GUI = True
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/clouds.jpg'
+img_path = '/home/odin/Desktop/div/cat2.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -33,7 +33,7 @@ def grey_img(dim):
     array = np.full((dim, dim, 3), 120)
     return array
 
-# img = random_noise_img(500)
+img = random_noise_img(500)
 
 
 # create and show image from float array
@@ -54,6 +54,8 @@ def load_model(model_path):
     with tf.gfile.FastGFile(model_path, 'rb') as f:
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
+        # changing the padding for the avgpool0 layer, in order to keep dimensions the same when finding the gradient
+        graph_def.node[333].attr['padding'].s = str.encode("SAME")
         tf.import_graph_def(graph_def, name='')
 
 
@@ -77,27 +79,30 @@ load_model(model_path)
 # print the names of all layers in the network
 def print_layer_names():
     for op in sess.graph.get_operations():
-        if op.name == 'avgpool0':
-            print(op)
+        print(op.name)
 
-print_layer_names()
+#print_layer_names()
 
 
 # The following function splits the image into smaller segments (grid style), computes gradients for
 # each segment, and concatenates the results into a gradient for the entire image. This gets rid of
 # GPU-limitations, so we are free to use as large pictures as we want to.
-def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=299):
+def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=100, last_layer = False):
 
     # Squaring the tensor gives the feature detection in images higher discrimination?? (pictures look better)
     tensor = tf.square(tensor)
 
     # The mean is calculated from the chosen channels in the layer. If None, we use the mean from the entire layer.
     if channel is None:
-        tensor_mean = tf.reduce_mean(tensor[:,:,:,:])
+        if last_layer:
+            tensor_mean = tf.reduce_mean(tensor[:,:])
+        else:
+            tensor_mean = tf.reduce_mean(tensor[:,:,:,:])
     else:
-        tensor_mean = tf.reduce_mean(tensor[:,:,:,channel])
-    # TODO: Find a way to use the final output tensor(output2:0) for the backprop
-    # tensor_mean = tf.reduce_mean(tensor[:, channel])
+        if last_layer:
+            tensor_mean = tf.reduce_mean(tensor[:,channel])
+        else:
+            tensor_mean = tf.reduce_mean(tensor[:,:,:,channel])
 
     # get the input tensor
     input_tensor = sess.graph.get_tensor_by_name("input:0")
@@ -166,7 +171,10 @@ def deepdream(image, layer_name, iterations=100, step_size=3, channel=None):
         print("iteration: ", i)
 
         # compute the gradient for the entire image
-        gradient = compute_gradient_from_image_segments(dreamed_image, tensor, channel)
+        if layer_name == "output2":
+            gradient = compute_gradient_from_image_segments(dreamed_image, tensor, channel, last_layer=True)
+        else:
+            gradient = compute_gradient_from_image_segments(dreamed_image, tensor, channel)
 
         # add the gradient to the image
         dreamed_image += gradient * step_size
