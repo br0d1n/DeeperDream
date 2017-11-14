@@ -11,7 +11,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = True
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/cat2.jpg'
+img_path = '/home/odin/Desktop/div/jonas.png'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -33,7 +33,7 @@ def grey_img(dim):
     array = np.full((dim, dim, 3), 120)
     return array
 
-img = random_noise_img(500)
+# img = grey_img(300)
 
 
 # create and show image from float array
@@ -59,6 +59,14 @@ def load_model(model_path):
         tf.import_graph_def(graph_def, name='')
 
 
+def load_labels(label_path):
+    with open(label_path) as f:
+        lines = f.readlines()
+        lines = [x.strip() for x in lines]
+        return lines
+
+
+
 # TODO: Load our own models into the graph
 def load_model_2(model_path):
     with tf.Session() as sess:
@@ -67,13 +75,14 @@ def load_model_2(model_path):
 
 # change this to the correct path
 model_path = 'models/tensorflow_inception_graph.pb'
-# model_path = 'saved_models/'
+label_path = 'models/imagenet_comp_graph_label_strings.txt'
 
 
 # start a tensorflow session
 sess = tf.Session()
 
 load_model(model_path)
+labels = load_labels(label_path)
 
 
 # print the names of all layers in the network
@@ -87,7 +96,7 @@ def print_layer_names():
 # The following function splits the image into smaller segments (grid style), computes gradients for
 # each segment, and concatenates the results into a gradient for the entire image. This gets rid of
 # GPU-limitations, so we are free to use as large pictures as we want to.
-def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=100, last_layer = False):
+def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=200, last_layer = False):
 
     # Squaring the tensor gives the feature detection in images higher discrimination?? (pictures look better)
     tensor = tf.square(tensor)
@@ -256,10 +265,14 @@ if use_GUI:
         layer_name = layerMenu.get(selected[0])
         tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
         num_channels = tensor.get_shape().as_list()[-1]
-        channels = range(0, num_channels)
         channelMenu.insert(END, "all channels")
-        for ch in channels:
-            channelMenu.insert(END, ch)
+        if layer_name == "output2":
+            for label in labels:
+                channelMenu.insert(END, label)
+        else:
+            channels = range(0, num_channels)
+            for ch in channels:
+                channelMenu.insert(END, ch)
         channelMenu.select_set(0)
 
     # menu for choosing layer
@@ -294,6 +307,8 @@ if use_GUI:
                 if channel_name == "all channels":
                     deepdream_with_octaves(img, layer_name, iterations=iterations, step_size=step_size, octaves=octaves, scale_ratio=scale_ratio)
                 else:
+                    if layer_name == "output2":
+                        channel_name = channelMenu.curselection()[0]-1
                     deepdream_with_octaves(img, layer_name, iterations=iterations, step_size=step_size, channel=int(channel_name), octaves=octaves, scale_ratio=scale_ratio)
             else:
                 infoLabel.config(text='Choose layer and channel first!')
