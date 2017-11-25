@@ -39,14 +39,15 @@ def grey_img(dim):
 # create and show image from float array
 def show_arrayimg(array):
     array = np.clip(array / 255.0, 0, 1) * 255
-    dreamed_image = PIL.Image.fromarray(array.astype('uint8'))
+    global image
+    image = PIL.Image.fromarray(array.astype('uint8'))
     if use_GUI:
-        global image
-        image = PIL.ImageTk.PhotoImage(dreamed_image)
-        canvas.itemconfig(imageSprite, image=image)
+        global image_tk
+        image_tk = PIL.ImageTk.PhotoImage(image)
+        canvas.itemconfig(imageSprite, image=image_tk)
         canvas.update()
     else:
-        dreamed_image.show()
+        image.show()
 
 
 # load the model
@@ -240,6 +241,9 @@ def deepdream_with_octaves(image, layer_name, iterations=100, step_size=3, chann
 
 # ----------------------- TKINTER ------------------------------------------
 
+layer_name = ''
+channel_name = ''
+
 if use_GUI:
 
     root = Tk()
@@ -298,7 +302,9 @@ if use_GUI:
 
     def run(event):
         if runButton.config('text')[-1] == 'Run DeepDream':
+            global layer_name
             layer_name = layerMenu.get(ACTIVE)
+            global channel_name
             channel_name = channelMenu.get(ACTIVE)
             iterations = int(iterationsEntry.get())
             step_size = int(stepsizeEntry.get())
@@ -351,8 +357,19 @@ if use_GUI:
     iterationsEntry.pack(side=RIGHT)
     iterationsEntry.insert(END, "100")
 
-    runButton = Button(parameterFrame, text="Run DeepDream", relief="raised")
+    buttonFrame = Frame(parameterFrame)
+    buttonFrame.pack(side=BOTTOM)
+
+    runButton = Button(buttonFrame, text="Run DeepDream", relief="raised")
     runButton.bind("<Button-1>", run)
-    runButton.pack(side=BOTTOM)
+    runButton.pack(side=LEFT)
+
+    def save(event):
+        directory = 'dreamed_images/'
+        image.save(directory+layer_name+'_'+str(channel_name)+'.png', 'PNG')
+
+    saveButton = Button(buttonFrame, text="Save", relief="raised")
+    saveButton.bind("<Button-1>", save)
+    saveButton.pack(side=RIGHT)
 
     root.mainloop()
