@@ -11,7 +11,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = True
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/jonas.png'
+img_path = '/home/odin/Desktop/div/cat2.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -99,6 +99,7 @@ def print_layer_names():
 def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=200, last_layer = False):
 
     # Squaring the tensor gives the feature detection in images higher discrimination?? (pictures look better)
+    # TODO: Find out if the line below really is necessary
     tensor = tf.square(tensor)
 
     # The mean is calculated from the chosen channels in the layer. If None, we use the mean from the entire layer.
@@ -121,29 +122,30 @@ def compute_gradient_from_image_segments(image, tensor, channel=None, segment_di
 
     # array containing zeroes, which will be filled up with gradients from each segment
     gradient = np.zeros_like(image)
-    x_max = len(gradient)
-    y_max = len(gradient[0])
+    y_max = len(gradient)
+    x_max = len(gradient[0])
 
     # to divide the picture differently each time, we introduce some randomness
     random_offset = int(segment_dim / 2)
 
     # the starting point of the grid we use to segment the image
-    x_start = random.randint(-random_offset, 0)
-    while x_start < x_max:
+    y_start = random.randint(-random_offset, 0)
+    x_origin = random.randint(-random_offset, 0)
+    while y_start < y_max:
 
         # find the beginning and end of the current segment. Can't be outside the image
-        x_end = min(x_start + segment_dim, x_max)
-        x_start = max(0, x_start)
+        y_end = min(y_start + segment_dim, y_max)
+        y_start = max(0, y_start)
 
-        # randomness in the y-direction
-        y_start = random.randint(-random_offset, 0)
-        while y_start < y_max:
+        # randomness in the x-direction
+        x_start = x_origin
+        while x_start < x_max:
 
-            y_end = min(y_start + segment_dim, y_max)
-            y_start = max(0, y_start)
+            x_end = min(x_start + segment_dim, x_max)
+            x_start = max(0, x_start)
 
             # get the current image-segment, witch we will compute the gradient for
-            image_segment = image[x_start:x_end, y_start:y_end, :]
+            image_segment = image[y_start:y_end, x_start:x_end, :]
             # we must add an extra dimension, because the inception-network can take in multiple images at the same time
             image_segment = np.expand_dims(image_segment, axis=0)
 
@@ -156,11 +158,11 @@ def compute_gradient_from_image_segments(image, tensor, channel=None, segment_di
             segment_gradient = segment_gradient/(1e-8 + np.std(segment_gradient))
 
             # adding the segment-gradient to the gradient for the entire image
-            gradient[x_start:x_end, y_start:y_end, :] = segment_gradient
-            y_start = y_end
+            gradient[y_start:y_end, x_start:x_end, :] = segment_gradient
+            x_start = x_end
 
         # continue the next segment, where the last one ended
-        x_start = x_end
+        y_start = y_end
 
     return gradient
 
