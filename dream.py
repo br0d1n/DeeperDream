@@ -4,6 +4,7 @@ import numpy as np
 import random
 import PIL.Image, PIL.ImageTk
 from tkinter import *
+from tkinter.filedialog import askopenfilename
 #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 
@@ -11,7 +12,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = True
 
 # change this to the correct path
-img_path = '/home/odin/Desktop/div/cat2.jpg'
+img_path = '/home/odin/Desktop/div/orange.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -33,7 +34,7 @@ def grey_img(dim):
     array = np.full((dim, dim, 3), 120)
     return array
 
-# img = grey_img(300)
+img = grey_img(300)
 
 
 # create and show image from float array
@@ -323,9 +324,21 @@ if use_GUI:
         else:
             runButton.config(text="Run DeepDream", relief="raised")
 
+    def choose_img(event):
+        img_path = askopenfilename()
+        global img
+        img = np.float32(PIL.Image.open(img_path))
+        global canvas
+        canvas.config(width=len(img[0]), height=len(img))
+        show_arrayimg(img)
+
     # all the parameters goes in here
     parameterFrame = Frame(menuFrame)
     parameterFrame.pack(side=RIGHT)
+
+    fileButton = Button(parameterFrame, text="Choose input-image", relief="raised")
+    fileButton.bind("<Button-1>", choose_img)
+    fileButton.pack(side=TOP)
 
     octavesFrame = Frame(parameterFrame)
     octavesFrame.pack(side=TOP)
