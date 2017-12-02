@@ -309,7 +309,7 @@ def plotNNFilter(layer_name):
         #Get activation matrix
         fi = filters[:,:,i]
         #Append tuple of mean, index and activation matrix
-        sorted_filters.append((fi.max(),i,fi))
+        sorted_filters.append((fi.sum(),i,fi))
     #Sort activations based on mean activation value
     sorted_filters = sorted(sorted_filters, reverse=True, key=lambda tup: tup[0])
 
@@ -320,7 +320,7 @@ def plotNNFilter(layer_name):
 
         plt.subplot(n_rows, n_columns, i+1)
         #Set title as mean-value
-        plt.title("Mean: " + str(np.mean(filter_tuple[2])))
+        plt.title("Sum: " + str(filter_tuple[0]))
         plt.imshow(filter_tuple[2], interpolation="none", cmap="gray")
         #Remove values on axis
         plt.xticks([])
