@@ -13,7 +13,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = False
 
 # change this to the correct path
-img_path = '/home/ole/Pictures/car.jpg'
+img_path = '/home/ole/Pictures/5dogs.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -298,16 +298,41 @@ def plotNNFilter(layer_name):
     tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
     #Run the tensor with the image as input
     units = sess.run(tensor,feed_dict={"input:0":[img]})
-    filters = units.shape[3]
+    filters = units[0,:,:,:]
     plt.figure(1, figsize=(20,20))
-    n_columns = 8
-    n_rows = 8
-    #Plot the first 100 filter-activations
+    filter_size = units.shape[3]
+    n_columns = 5
+    n_rows = 5
+    #Initialize empty list
+    sorted_filters = list()
+    for i in range(filter_size):
+        #Get activation matrix
+        fi = filters[:,:,i]
+        #Append tuple of mean, index and activation matrix
+        sorted_filters.append((fi.max(),i,fi))
+    #Sort activations based on mean activation value
+    sorted_filters = sorted(sorted_filters, reverse=True, key=lambda tup: tup[0])
+
     for i in range(n_columns*n_rows):
         print("Plotting filter nr. ", i)
+
+        filter_tuple = sorted_filters[i]
+
         plt.subplot(n_rows, n_columns, i+1)
-        plt.title("Mean:" + str(np.mean(units[0,:,:,i])))
-        plt.imshow(units[0,:,:,i], interpolation="none", cmap="gray")
+        #Set title as mean-value
+        plt.title("Mean: " + str(np.mean(filter_tuple[2])))
+        plt.imshow(filter_tuple[2], interpolation="none", cmap="gray")
+        #Remove values on axis
+        plt.xticks([])
+        plt.yticks([])
+
+        #Show mask as PIL image
+        #mask = PIL.Image.fromarray(filter_tuple[2]/filter_tuple[2].max()*255)
+        #mask = mask.resize((img.shape[1], img.shape[0]))
+        #mask.show()
+
+    #Show plot
     plt.show()
 
-plotNNFilter("mixed4b")
+#Plot filters
+plotNNFilter("mixed4e")
