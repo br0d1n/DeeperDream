@@ -294,13 +294,19 @@ if use_GUI:
     root.mainloop()
 
 def getOutput():
+    #get output layer
     tensor = sess.graph.get_tensor_by_name('output2:0')
+    #calculate the score for each class
     units = np.mean(sess.run(tensor, feed_dict={"input:0":[img]}), axis=0)
+    #get all labels
     labels = open('models/imagenet_comp_graph_label_strings.txt').read().split('\n')
     sorted_labels = []
+    #add labels to values
     for i in range(len(labels)):
         sorted_labels.append((units[i], labels[i]))
+    #sort tuples on highest Probability
     sorted_labels = sorted(sorted_labels,reverse=True,key=lambda tup: tup[0])
+    #print the 20 highest Probabilities
     print("Probabilities:")
     for x in range(20):
         print(sorted_labels[x][1] + ": " + str(sorted_labels[x][0]))
