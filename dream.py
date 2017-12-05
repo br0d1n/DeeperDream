@@ -309,10 +309,10 @@ def plotNNFilter(layer_name):
     sorted_filters = list()
     for i in range(filter_size):
         fi = filters[:,:,i]
-        sorted_filters.append((np.mean(fi),i,fi))
+        sorted_filters.append((fi.sum(),i,fi))
     sorted_filters = sorted(sorted_filters, reverse=True, key=lambda tup: tup[0])
 
-    for i in range(25):
+    for i in range(4):
 
         filter_tuple = sorted_filters[i]
 
@@ -329,6 +329,9 @@ def plotNNFilter(layer_name):
 
         newImg = PIL.Image.merge('RGB', (r,g,b))
         newImg.show()
+
+        mask = PIL.Image.fromarray(mask*255)
+        mask.show()
 
     #Plot the first 100 filter-activations
     # means = np.zeros(filters)
