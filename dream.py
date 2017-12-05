@@ -13,7 +13,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = False
 
 # change this to the correct path
-img_path = '/home/ole/Pictures/5dogs.jpg'
+img_path = 'images/dogs.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -293,6 +293,11 @@ if use_GUI:
 
     root.mainloop()
 
+def getOutput():
+    tensor = sess.graph.get_tensor_by_name('output2:0')
+    units = sess.run(tensor,feed_dict={"input:0":[img]})
+    print(units[0])
+
 def plotNNFilter(layer_name):
     #Get the tensor by name
     tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
@@ -329,9 +334,8 @@ def plotNNFilter(layer_name):
 
         newImg = PIL.Image.merge('RGB', (r,g,b))
         newImg.show()
-
-        mask = PIL.Image.fromarray(mask*255)
-        mask.show()
+        # mask = PIL.Image.fromarray(mask*255)
+        # mask.show()
 
     #Plot the first 100 filter-activations
     # means = np.zeros(filters)
@@ -348,4 +352,5 @@ def plotNNFilter(layer_name):
     #plt.tight_layout(h_pad=5.0)
     #plt.show()
 
-plotNNFilter("mixed4e")
+#plotNNFilter("mixed5b")
+getOutput()
