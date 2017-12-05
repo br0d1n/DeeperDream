@@ -13,7 +13,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = False
 
 # change this to the correct path
-img_path = 'images/dogs.jpg'
+img_path = 'images/slothtiger.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -79,7 +79,7 @@ def print_layer_names():
         if op.type != 'Const':
             print(op.type, "\t\t", op.name)
 
-print_layer_names()
+#print_layer_names()
 
 # The following function splits the image into smaller segments (grid style), computes gradients for
 # each segment, and concatenates the results into a gradient for the entire image. This gets rid of
@@ -295,8 +295,15 @@ if use_GUI:
 
 def getOutput():
     tensor = sess.graph.get_tensor_by_name('output2:0')
-    units = sess.run(tensor,feed_dict={"input:0":[img]})
-    print(units[0])
+    units = np.mean(sess.run(tensor, feed_dict={"input:0":[img]}), axis=0)
+    labels = open('models/imagenet_comp_graph_label_strings.txt').read().split('\n')
+    sorted_labels = []
+    for i in range(len(labels)):
+        sorted_labels.append((units[i], labels[i]))
+    sorted_labels = sorted(sorted_labels,reverse=True,key=lambda tup: tup[0])
+    print("Probabilities:")
+    for x in range(20):
+        print(sorted_labels[x][1] + ": " + str(sorted_labels[x][0]))
 
 def plotNNFilter(layer_name):
     #Get the tensor by name
@@ -317,7 +324,7 @@ def plotNNFilter(layer_name):
         sorted_filters.append((fi.sum(),i,fi))
     sorted_filters = sorted(sorted_filters, reverse=True, key=lambda tup: tup[0])
 
-    for i in range(4):
+    for i in range(5):
 
         filter_tuple = sorted_filters[i]
 
@@ -352,5 +359,5 @@ def plotNNFilter(layer_name):
     #plt.tight_layout(h_pad=5.0)
     #plt.show()
 
-#plotNNFilter("mixed5b")
+#plotNNFilter("mixed4e")
 getOutput()
