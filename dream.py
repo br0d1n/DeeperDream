@@ -297,7 +297,7 @@ def getOutput():
     #get output layer
     tensor = sess.graph.get_tensor_by_name('output2:0')
     #calculate the score for each class
-    units = np.mean(sess.run(tensor, feed_dict={"input:0":[img]}), axis=0)
+    units = np.round(np.mean(sess.run(tensor, feed_dict={"input:0":[img]}), axis=0),decimals = 3)
     #get all labels
     labels = open('models/imagenet_comp_graph_label_strings.txt').read().split('\n')
     sorted_labels = []
