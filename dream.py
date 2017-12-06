@@ -34,7 +34,7 @@ def grey_img(dim):
     array = np.full((dim, dim, 3), 120)
     return array
 
-img = grey_img(300)
+img = grey_img(400)
 
 
 # create and show image from float array
@@ -98,11 +98,11 @@ def print_layer_names():
 # The following function splits the image into smaller segments (grid style), computes gradients for
 # each segment, and concatenates the results into a gradient for the entire image. This gets rid of
 # GPU-limitations, so we are free to use as large pictures as we want to.
-def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=200, last_layer = False):
+def compute_gradient_from_image_segments(image, tensor, channel=None, segment_dim=200, last_layer = False, output_exp=2.0):
 
     # Squaring the tensor gives the feature detection in images higher discrimination?? (pictures look better)
-    # TODO: Find out if the line below really is necessary
-    tensor = tf.square(tensor)
+    #tensor = tf.square(tensor)
+    tensor = tf.pow(tensor, output_exp)
 
     # The mean is calculated from the chosen channels in the layer. If None, we use the mean from the entire layer.
     if channel is None:
@@ -170,7 +170,7 @@ def compute_gradient_from_image_segments(image, tensor, channel=None, segment_di
 
 
 # the deepdream algorithm, which alters the input-image according to the gradient computed in every iteration
-def deepdream(image, layer_name, iterations=100, step_size=3, channel=None):
+def deepdream(image, layer_name, iterations=100, step_size=3, channel=None, output_exp=2.0):
 
     # get the tensor we will use to compute the gradient
     tensor = sess.graph.get_tensor_by_name(layer_name + ':0')
@@ -185,9 +185,11 @@ def deepdream(image, layer_name, iterations=100, step_size=3, channel=None):
 
         # compute the gradient for the entire image
         if layer_name == "output2":
-            gradient = compute_gradient_from_image_segments(dreamed_image, tensor, channel, last_layer=True)
+            gradient = compute_gradient_from_image_segments(dreamed_image, tensor, channel, output_exp=output_exp, last_layer=True)
         else:
-            gradient = compute_gradient_from_image_segments(dreamed_image, tensor, channel)
+            gradient = compute_gradient_from_image_segments(dreamed_image, tensor, channel, output_exp=output_exp)
+
+        #print(np.sum(np.absolute(gradient.flatten())))
 
         # add the gradient to the image
         dreamed_image += gradient * step_size
@@ -206,7 +208,7 @@ def deepdream(image, layer_name, iterations=100, step_size=3, channel=None):
 
 # The following function runs the deepdream-algorithm on different scales (octaves) of the original image.
 # This is done to discover patterns of different sizes.
-def deepdream_with_octaves(image, layer_name, iterations=100, step_size=3, channel=None, octaves=1, scale_ratio=0.8, octave_blend=0.5):
+def deepdream_with_octaves(image, layer_name, iterations=100, step_size=3, channel=None, octaves=1, scale_ratio=0.8, octave_blend=0.5, output_exp=2.0):
     image_height = len(image)
     image_with = len(image[0])
 
@@ -225,7 +227,7 @@ def deepdream_with_octaves(image, layer_name, iterations=100, step_size=3, chann
         scaled_image_array = np.float32(scaled_image)
 
         # run deepdream algorithm
-        dreamed_image_array = deepdream(scaled_image_array, layer_name, iterations, step_size, channel)
+        dreamed_image_array = deepdream(scaled_image_array, layer_name, iterations, step_size, channel, output_exp=output_exp)
 
         # create image object of the image-array
         dreamed_image_array = np.clip(dreamed_image_array / 255.0, 0, 1) * 255
@@ -311,14 +313,15 @@ if use_GUI:
             step_size = int(stepsizeEntry.get())
             octaves = int(octavesEntry.get())
             scale_ratio = float(scaleEntry.get())
+            output_exp = float(exponentEntry.get())
             if channel_name != '':
                 runButton.config(text="Stop DeepDream", relief="raised")
                 if channel_name == "all channels":
-                    deepdream_with_octaves(img, layer_name, iterations=iterations, step_size=step_size, octaves=octaves, scale_ratio=scale_ratio)
+                    deepdream_with_octaves(img, layer_name, iterations=iterations, step_size=step_size, octaves=octaves, scale_ratio=scale_ratio, output_exp=output_exp)
                 else:
                     if layer_name == "output2":
                         channel_name = channelMenu.curselection()[0]-1
-                    deepdream_with_octaves(img, layer_name, iterations=iterations, step_size=step_size, channel=int(channel_name), octaves=octaves, scale_ratio=scale_ratio)
+                    deepdream_with_octaves(img, layer_name, iterations=iterations, step_size=step_size, channel=int(channel_name), octaves=octaves, scale_ratio=scale_ratio, output_exp=output_exp)
             else:
                 infoLabel.config(text='Choose layer and channel first!')
         else:
@@ -339,6 +342,14 @@ if use_GUI:
     fileButton = Button(parameterFrame, text="Choose input-image", relief="raised")
     fileButton.bind("<Button-1>", choose_img)
     fileButton.pack(side=TOP)
+
+    exponentFrame = Frame(parameterFrame)
+    exponentFrame.pack(side=TOP)
+    exponentLabel = Label(exponentFrame, text="output tensor exponent")
+    exponentLabel.pack(side=LEFT)
+    exponentEntry = Entry(exponentFrame, width=7)
+    exponentEntry.pack(side=LEFT)
+    exponentEntry.insert(END, "2.0")
 
     octavesFrame = Frame(parameterFrame)
     octavesFrame.pack(side=TOP)
