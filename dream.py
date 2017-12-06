@@ -13,7 +13,7 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = False
 
 # change this to the correct path
-img_path = 'images/slothtiger.jpg'
+img_path = 'images/penguins3.jpg'
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -330,7 +330,7 @@ def plotNNFilter(layer_name):
         sorted_filters.append((fi.sum(),i,fi))
     sorted_filters = sorted(sorted_filters, reverse=True, key=lambda tup: tup[0])
 
-    for i in range(5):
+    for i in range(10):
 
         filter_tuple = sorted_filters[i]
 
@@ -343,10 +343,11 @@ def plotNNFilter(layer_name):
         g = PIL.Image.fromarray(np.uint8(g*mask))
         b = PIL.Image.fromarray(np.uint8(b*mask))
 
-        print("Showing filter:", filter_tuple[1], "Score:", filter_tuple[0])
+        print("saving filter:", filter_tuple[1], "Score:", filter_tuple[0])
 
         newImg = PIL.Image.merge('RGB', (r,g,b))
-        newImg.show()
+        #newImg.show()
+        newImg.save('results/' + str(i) + '-filter_' + str(filter_tuple[1]) + '-score_' + str(filter_tuple[0]) + '.jpg')
         # mask = PIL.Image.fromarray(mask*255)
         # mask.show()
 
@@ -365,5 +366,5 @@ def plotNNFilter(layer_name):
     #plt.tight_layout(h_pad=5.0)
     #plt.show()
 
-#plotNNFilter("mixed4e")
 getOutput()
+plotNNFilter("mixed4e")
