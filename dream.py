@@ -13,7 +13,8 @@ os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
 use_GUI = False
 
 # change this to the correct path
-img_path = '/home/ole/Pictures/5dogs.jpg'
+img_name = 'husky2.jpg'
+img_path = 'images/' + img_name
 
 # create a float array from the input image
 img = np.float32(PIL.Image.open(img_path))
@@ -299,7 +300,7 @@ def plotNNFilter(layer_name):
     #Run the tensor with the image as input
     units = sess.run(tensor,feed_dict={"input:0":[img]})
     filters = units[0,:,:,:]
-    plt.figure(1, figsize=(20,20))
+    fig = plt.figure(1, figsize=(20,20))
     filter_size = units.shape[3]
     n_columns = 5
     n_rows = 5
@@ -313,18 +314,34 @@ def plotNNFilter(layer_name):
     #Sort activations based on mean activation value
     sorted_filters = sorted(sorted_filters, reverse=True, key=lambda tup: tup[0])
 
-    for i in range(n_columns*n_rows):
-        print("Plotting filter nr. ", i)
+    dimensions = sorted_filters[0][2].shape
+    img_count = [2,2]
+    dimensions = (dimensions[1]*10, dimensions[0]*10)
+    arrayImg = PIL.Image.new('RGB', (dimensions[0]*img_count[0],dimensions[1]*img_count[1]))
 
-        filter_tuple = sorted_filters[i]
+    i = 0
+    for x in range(0,dimensions[0]*img_count[0],dimensions[0]):
+        for y in range(0,dimensions[1]*img_count[1],dimensions[1]):
+            fi = sorted_filters[i][2]
+            active = PIL.Image.fromarray(fi/fi.max()*255).resize((dimensions[0], dimensions[1]))
+            arrayImg.paste(active,(x,y))
+            i += 1
+    arrayImg.show()
+    arrayImg.save('results/'+ layer_name + '_' + img_name)
 
-        plt.subplot(n_rows, n_columns, i+1)
-        #Set title as mean-value
-        plt.title("Sum: " + str(filter_tuple[0]))
-        plt.imshow(filter_tuple[2], interpolation="none", cmap="gray")
-        #Remove values on axis
-        plt.xticks([])
-        plt.yticks([])
+
+    # for i in range(n_columns*n_rows):
+    #     print("Plotting filter nr. ", i)
+    #
+    #     filter_tuple = sorted_filters[i]
+    #
+    #     plt.subplot(n_rows, n_columns, i+1)
+    #     #Set title as mean-value
+    #     plt.title("Sum: " + str(filter_tuple[0]))
+    #     plt.imshow(filter_tuple[2], interpolation="none", cmap="gray")
+    #     #Remove values on axis
+    #     plt.xticks([])
+    #     plt.yticks([])
 
         #Show mask as PIL image
         #mask = PIL.Image.fromarray(filter_tuple[2]/filter_tuple[2].max()*255)
@@ -332,7 +349,9 @@ def plotNNFilter(layer_name):
         #mask.show()
 
     #Show plot
-    plt.show()
+    #fig.savefig('results/plot.png')
+    #plt.show()
 
 #Plot filters
-plotNNFilter("mixed4e")
+layer_name = 'mixed4e_1x1'
+plotNNFilter(layer_name)
